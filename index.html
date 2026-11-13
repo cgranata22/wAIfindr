@@ -4,134 +4,259 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>wAIfindr live map</title>
+<meta name="theme-color" content="#ffffff">
+<title>wAIfindr</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-:root{--paper:#F2F4F7;--surface:#fff;--ink:#101B33;--muted:#566178;--line:#D8DEE7;--accent:#FFC531;--brand:#1D3FA0;
- --c-sight:#3348D6;--c-museum:#0B8480;--c-food:#D2452B;--c-cafe:#9A5B13;--c-shop:#B02A86;--c-park:#2E7D32;--c-transit:#4A5568;--c-area:#6B3FC4;--c-stay:#0E6BA8}
+/* Wayfinding signage: ink on paper, one signal-yellow accent, place types colour-coded like transit lines. */
+:root{--paper:#F2F4F7;--surface:#fff;--sunk:#E9EDF2;--ink:#101B33;--muted:#566178;--line:#D8DEE7;--accent:#FFC531;--brand:#1D3FA0;--ok:#18794E;
+ --c-sight:#3348D6;--c-museum:#0B8480;--c-food:#D2452B;--c-cafe:#9A5B13;--c-shop:#B02A86;--c-park:#2E7D32;--c-transit:#4A5568;--c-area:#6B3FC4;--c-stay:#0E6BA8;
+ --r:14px;--shadow:0 1px 2px rgba(16,27,51,.06),0 6px 20px rgba(16,27,51,.06)}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--paper);display:flex;flex-direction:column;font-size:16px;line-height:1.45}
-header{background:var(--surface);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;display:flex;flex-direction:column;gap:8px;z-index:1000}
-.top{display:flex;align-items:center;gap:10px}
-.logo{font-weight:800;font-size:1.2rem;letter-spacing:-.02em;white-space:nowrap}
+body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--paper);font-size:16px;line-height:1.5;display:flex;flex-direction:column;height:100dvh;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{line-height:1.2;text-wrap:balance}
+h2{font-size:1.35rem}
+h3{font-size:1.05rem}
+a{color:var(--brand)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+.muted{color:var(--muted)}.small{font-size:.875rem}.num{font-variant-numeric:tabular-nums}
+header{background:var(--surface);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;display:flex;align-items:center;gap:12px;flex:none}
+.logo{font-weight:800;font-size:1.25rem;letter-spacing:-.02em;white-space:nowrap}
 .logo b{background:var(--accent);padding:0 .2em;border-radius:5px;margin:0 .05em}
-.trip{flex:1;min-width:0;font-weight:600;font-size:.9rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-select,button{font:inherit;color:inherit}
+.trip{flex:1;min-width:0;text-align:right;line-height:1.25}
+.trip strong{display:block;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trip span{font-size:.78rem;color:var(--muted)}
+main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.wrap{max-width:860px;margin:0 auto;padding:14px 14px 28px;display:flex;flex-direction:column;gap:14px}
+nav{flex:none;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px 8px;font-size:.74rem;font-weight:600;color:var(--muted);border-top:3px solid transparent;margin-top:-1px;cursor:pointer}
+.tab svg{width:22px;height:22px}
+.tab.on{color:var(--ink);border-top-color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.days{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.days::-webkit-scrollbar,.chips::-webkit-scrollbar{display:none}
+.day{flex:none;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer;min-width:112px}
+.day b{display:block;font-size:.9rem}
+.day span{display:block;font-size:.76rem;opacity:.75}
+.day.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 13px;min-height:40px;font-weight:600;font-size:.92rem;cursor:pointer;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tl{list-style:none;margin:14px 0 0;padding:0}
+.stop{display:grid;grid-template-columns:62px 14px 1fr;gap:0 10px;padding-bottom:18px;position:relative}
+.stop .time{font-weight:700;font-size:.82rem;text-align:right;padding-top:5px}
+.stop .dot{width:14px;height:14px;border-radius:50%;margin-top:7px;box-shadow:0 0 0 3px var(--surface);position:relative;z-index:1}
+.stop:not(:last-child)::before{content:"";position:absolute;left:78px;top:20px;bottom:0;width:2px;background:var(--line)}
+.stop strong{display:block;overflow-wrap:anywhere}
+.stop .n{color:var(--muted);font-size:.92rem;display:block;overflow-wrap:anywhere}
+.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.links a{font-size:.84rem;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:4px 12px;text-decoration:none;color:var(--ink);white-space:nowrap;min-height:30px;display:inline-flex;align-items:center}
+.links a.main{background:var(--brand);border-color:var(--brand);color:#fff}
+.links a.go{background:var(--accent);border-color:var(--accent)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:0 16px}
+summary{cursor:pointer;font-weight:700;padding:14px 0}
+.idea{padding:10px 0;border-top:1px solid var(--line)}
+.eatrow{padding:14px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.eatrow:first-child{border-top:0;padding-top:2px}
+.topline{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.when{font-size:.74rem;font-weight:700;border-radius:6px;padding:2px 8px;background:var(--ink);color:#fff}
+.tag{font-size:.74rem;font-weight:700;border-radius:6px;padding:1px 8px;border:1.5px solid var(--accent)}
+.kick{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px}
+.seg{display:inline-flex;background:var(--sunk);border-radius:12px;padding:4px;gap:4px;align-self:flex-start}
+.seg button{border:0;background:transparent;border-radius:9px;padding:8px 18px;font-weight:700;cursor:pointer;color:var(--muted);min-height:38px}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.bar{height:8px;background:var(--sunk);border-radius:999px;overflow:hidden;flex:1;min-width:100px}
+.bar i{display:block;height:100%;background:var(--ok)}
+.item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.item input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--brand);flex:none}
+.item label{flex:1;overflow-wrap:anywhere}
+.item.done label{color:var(--muted);text-decoration:line-through}
+.item a{font-size:.84rem;font-weight:600;white-space:nowrap}
+.note{background:var(--sunk);border-left:4px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:.9rem}
+/* map */
+#mapview{display:none;flex-direction:column;height:100%}
+#mapview.on{display:flex}
+.mapctl{background:var(--surface);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-direction:column;gap:8px;flex:none}
 select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);min-height:40px;width:100%}
-.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-.chips::-webkit-scrollbar{display:none}
-.chip{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:.85rem;font-weight:600;cursor:pointer;min-height:34px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:.84rem;font-weight:600;cursor:pointer;min-height:34px}
 .chip i{width:10px;height:10px;border-radius:50%}
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-#map{flex:1;min-height:0;background:#E4E9EF}
+.mapwrap{position:relative;flex:1;min-height:260px}
+#map{position:absolute;inset:0;background:#E4E9EF}
 .pin{border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(16,27,51,.45);color:#fff;font-weight:700;font-size:13px;display:grid;place-items:center}
 .pin.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--ink),0 2px 6px rgba(16,27,51,.5)}
 .me{width:16px;height:16px;border-radius:50%;background:#1A73E8;border:3px solid #fff;box-shadow:0 0 0 6px rgba(26,115,232,.25)}
-#card{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:1000;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 6px 24px rgba(16,27,51,.22);max-width:520px;margin:0 auto;display:none}
-#card.on{display:block}
-#card h2{margin:0 28px 2px 0;font-size:1.08rem;line-height:1.2}
-#card .sub{font-size:.84rem;color:var(--muted);margin:0 0 6px}
-#card p{margin:0 0 10px;font-size:.93rem}
-#card .x{position:absolute;top:6px;right:6px;border:0;background:transparent;font-size:1.4rem;line-height:1;width:40px;height:40px;cursor:pointer;color:var(--muted)}
-.btn{display:inline-flex;align-items:center;gap:6px;background:var(--brand);color:#fff;border-radius:10px;padding:9px 14px;font-weight:600;text-decoration:none;font-size:.93rem;border:0;cursor:pointer;min-height:40px}
-.btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
-.row{display:flex;gap:8px;flex-wrap:wrap}
 #loc{position:absolute;right:10px;top:10px;z-index:900;box-shadow:0 1px 5px rgba(16,27,51,.3)}
-.wrapmap{position:relative;flex:1;min-height:0;display:flex}
-#empty{padding:28px 20px;max-width:560px;margin:0 auto}
-#empty h1{font-size:1.4rem;margin:0 0 8px}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#pcard{position:absolute;left:10px;right:10px;bottom:10px;z-index:1000;max-width:520px;margin:0 auto;display:none;box-shadow:0 6px 24px rgba(16,27,51,.25)}
+#pcard.on{display:block}
+#pcard h3{margin-right:34px}
+#pcard .x{position:absolute;top:4px;right:4px;border:0;background:transparent;font-size:1.5rem;line-height:1;width:42px;height:42px;cursor:pointer;color:var(--muted)}
+@media (min-width:760px){nav{order:-1;border-top:0;border-bottom:1px solid var(--line);justify-content:center}.tab{flex:none;flex-direction:row;gap:8px;font-size:.95rem;padding:12px 18px;border-top:0;border-bottom:3px solid transparent;margin:0 0 -1px}.tab.on{border-bottom-color:var(--accent)}header{order:-2}}
 </style>
 </head>
 <body>
-<header>
- <div class="top"><div class="logo">w<b>AI</b>findr</div><div class="trip" id="trip"></div></div>
- <div id="controls" hidden>
-  <label for="day" style="position:absolute;left:-9999px">Day</label>
-  <select id="day"></select>
-  <div class="chips" id="chips" style="margin-top:8px"></div>
+<header><div class="logo">w<b>AI</b>findr</div><div class="trip" id="trip"></div></header>
+<main id="main"><div class="wrap" id="view"></div>
+ <div id="mapview">
+  <div class="mapctl"><label for="mday" style="position:absolute;left:-9999px">Day</label><select id="mday"></select><div class="chips" id="mchips"></div></div>
+  <div class="mapwrap"><div id="map"></div><button class="btn" id="loc" type="button">Where am I?</button><div class="card" id="pcard"></div></div>
  </div>
-</header>
-<div class="wrapmap" id="wrapmap">
- <div id="map"></div>
- <button class="btn alt" id="loc" type="button">Where am I?</button>
- <div id="card" role="dialog" aria-live="polite"></div>
-</div>
-<div id="empty" hidden>
- <h1>No trip to show yet</h1>
- <p>This page draws the live map for a wAIfindr trip. Open it from the Map tab of your wAIfindr app with the <strong>Open live map</strong> button, which sends your places here.</p>
- <p style="color:var(--muted);font-size:.9rem">Your trip details travel in the link itself and stay on your device. Nothing is stored on this site.</p>
-</div>
+</main>
+<nav id="tabs" aria-label="Sections"></nav>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 "use strict";
 var CATS={sight:"Sights",museum:"Museums",food:"Restaurants",cafe:"Cafés",shop:"Shopping",park:"Parks",transit:"Transport",stay:"Hotels",area:"Neighbourhoods"};
 var COL={sight:"#3348D6",museum:"#0B8480",food:"#D2452B",cafe:"#9A5B13",shop:"#B02A86",park:"#2E7D32",transit:"#4A5568",area:"#6B3FC4",stay:"#0E6BA8"};
-function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
-function decode(h){
- h=(h||"").replace(/^#/,"");if(h.indexOf("t=")===0)h=h.slice(2);if(!h)return null;
- try{var b=h.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";
-  var d=JSON.parse(decodeURIComponent(escape(atob(b))));
-  if(!d||!Array.isArray(d.places))return null;
-  d.places=d.places.filter(function(p){return p&&typeof p.la==="number"&&typeof p.ln==="number"&&isFinite(p.la)&&isFinite(p.ln);});
-  d.days=Array.isArray(d.days)?d.days:[];return d;
- }catch(e){return null;}
-}
-var T=decode(location.hash),KEY="waifindr.map.last";
-try{if(T)localStorage.setItem(KEY,location.hash);else{T=decode(localStorage.getItem(KEY));}}catch(e){}
-var st={cat:"all",day:"all",sel:null},map,layer,routeLine,meMark,marks={};
+var ICON={plan:"M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01",map:"M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10zM12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",eat:"M7 3v7a2 2 0 0 0 2 2v9M5 3v5M9 3v5M17 3c-2 2-3 4.5-3 8h3v10",prep:"M4 12l5 5L20 6"};
+var TABS=[["plan","Itinerary"],["map","Map"],["eat","Eat"],["prep","Prep"]];
+var KEY="waifindr.site.v2",T=null,stamp="";
+var ui={view:"plan",day:0,mapDay:"all",mapCat:"all",sel:null,prep:"todo"};
+var map,layer,routeLine,meMark;
 
-function gmaps(p){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(p.q||(p.n+(T.dest?", "+T.dest:"")));}
-function dayPlaces(i){var d=T.days[i];if(!d)return[];var out=[];(d.s||[]).forEach(function(id){var p=T.places.filter(function(x){return x.id===id;})[0];if(p&&out.indexOf(p)<0)out.push(p);});return out;}
-function visible(){
- var list=st.day==="all"?T.places.slice():dayPlaces(+st.day);
- if(st.cat!=="all")list=list.filter(function(p){return (COL[p.c]?p.c:"area")===st.cat;});
- return list;
-}
-function icon(p,n,sel){var c=COL[p.c]||COL.area,s=sel?34:n?28:22;
- return L.divIcon({className:"",iconSize:[s,s],iconAnchor:[s/2,s/2],html:'<div class="pin'+(sel?" sel":"")+'" style="width:'+s+'px;height:'+s+'px;background:'+c+'">'+(n||"")+'</div>'});}
-function draw(fit){
- layer.clearLayers();marks={};if(routeLine){map.removeLayer(routeLine);routeLine=null;}
- var list=visible(),numbered=st.day!=="all"&&st.cat==="all";
- if(numbered&&list.length>1){routeLine=L.polyline(list.map(function(p){return[p.la,p.ln];}),{color:"#101B33",weight:3,dashArray:"2 9",lineCap:"round"}).addTo(map);}
- list.forEach(function(p,i){var m=L.marker([p.la,p.ln],{icon:icon(p,numbered?i+1:0,st.sel===p.id),title:p.n,alt:p.n,keyboard:true,zIndexOffset:st.sel===p.id?1000:0});
-  m.on("click",function(){select(p.id);});m.addTo(layer);marks[p.id]=m;});
- if(fit&&list.length){var b=L.latLngBounds(list.map(function(p){return[p.la,p.ln];}));map.fitBounds(b.pad(.15),{maxZoom:16});}
- card();
-}
-function select(id){st.sel=st.sel===id?null:id;draw(false);var p=st.sel&&T.places.filter(function(x){return x.id===st.sel;})[0];if(p)map.panTo([p.la,p.ln]);}
-function card(){var el=document.getElementById("card"),p=st.sel&&T.places.filter(function(x){return x.id===st.sel;})[0];
- if(!p){el.className="";el.innerHTML="";return;}
- var c=COL[p.c]?p.c:"area";
- el.innerHTML='<button class="x" type="button" aria-label="Close" id="cx">×</button><h2>'+esc(p.n)+'</h2><p class="sub"><span style="color:'+COL[c]+';font-weight:700">'+CATS[c]+'</span>'+(p.a?" · "+esc(p.a):"")+(p.by?" · picked by "+esc(p.by):"")+'</p>'+(p.o?'<p>'+esc(p.o)+'</p>':"")+
-  '<div class="row"><a class="btn" href="'+gmaps(p)+'" target="_blank" rel="noopener">Open in Google Maps</a>'+(/^https?:\/\//i.test(p.u||"")?'<a class="btn alt" href="'+esc(p.u)+'" target="_blank" rel="noopener">'+esc(p.ul||"Website")+'</a>':"")+'</div>';
- el.className="on";document.getElementById("cx").onclick=function(){st.sel=null;draw(false);};}
-function chips(){var base=st.day==="all"?T.places:dayPlaces(+st.day),have=Object.keys(CATS).filter(function(c){return base.some(function(p){return (COL[p.c]?p.c:"area")===c;});});
- if(st.cat!=="all"&&have.indexOf(st.cat)<0)st.cat="all";
- document.getElementById("chips").innerHTML=["all"].concat(have).map(function(c){return '<button type="button" class="chip'+(st.cat===c?" on":"")+'" data-c="'+c+'">'+(c==="all"?"Everything":'<i style="background:'+COL[c]+'"></i>'+CATS[c])+'</button>';}).join("");}
-function start(){
- document.getElementById("trip").textContent=T.name||"";document.title=(T.name?T.name+" · ":"")+"wAIfindr live map";
- document.getElementById("controls").hidden=false;
- var sel=document.getElementById("day");
- sel.innerHTML='<option value="all">All days, all places</option>'+T.days.map(function(d,i){return '<option value="'+i+'">Day '+(i+1)+(d.l?" · "+esc(d.l):"")+": "+esc(d.t||"")+'</option>';}).join("");
- if(typeof T.day==="number"&&T.days[T.day]){st.day=String(T.day);sel.value=st.day;}
- map=L.map("map",{zoomControl:false});L.control.zoom({position:"bottomright"}).addTo(map);
- L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
- layer=L.layerGroup().addTo(map);map.setView([48.8589,2.347],12);
- map.on("click",function(){if(st.sel){st.sel=null;draw(false);}});
- chips();draw(true);
- sel.onchange=function(){st.day=sel.value;st.sel=null;chips();draw(true);};
- document.getElementById("chips").onclick=function(e){var b=e.target.closest("[data-c]");if(!b)return;st.cat=b.getAttribute("data-c");st.sel=null;chips();draw(true);};
- var loc=document.getElementById("loc");
- if(!navigator.geolocation){loc.hidden=true;}
- loc.onclick=function(){loc.textContent="Finding you…";
-  navigator.geolocation.getCurrentPosition(function(g){loc.textContent="Where am I?";var ll=[g.coords.latitude,g.coords.longitude];
-   if(meMark)map.removeLayer(meMark);meMark=L.marker(ll,{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:'<div class="me"></div>'}),title:"You are here",zIndexOffset:2000}).addTo(map);map.setView(ll,Math.max(map.getZoom(),15));},
-   function(){loc.textContent="Location is off";setTimeout(function(){loc.textContent="Where am I?";},2500);},{enableHighAccuracy:true,timeout:10000});};
-}
-if(T&&T.places.length&&window.L)start();
-else{document.getElementById("wrapmap").style.display="none";document.getElementById("empty").hidden=false;}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function cat(c){return COL[c]?c:"area";}
+function pd(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?new Date(+m[1],+m[2]-1,+m[3]):null;}
+function fmt(s,o){var d=pd(s);return d?d.toLocaleDateString("en-US",o):String(s||"");}
+function t12(t){var m=/^(\d{1,2}):(\d{2})$/.exec(t||"");if(!m)return t||"";var h=+m[1],ap=h>=12?"PM":"AM";h=h%12||12;return h+":"+m[2]+" "+ap;}
+function tmin(t){var m=/^(\d{1,2}):(\d{2})$/.exec(t||"");return m?(+m[1])*60+(+m[2]):null;}
+function today0(){var n=new Date();n.setHours(0,0,0,0);return n;}
+function countdown(){var s=pd(T.start),e=pd(T.end);if(!s)return"";var d=Math.round((s-today0())/864e5);
+ if(d>1)return"Starts in "+d+" days";if(d===1)return"Starts tomorrow";if(d===0)return"Starts today";if(e&&today0()<=e)return"Day "+(1-d)+" of the trip";return"Trip complete";}
+function place(id){for(var i=0;i<T.places.length;i++)if(T.places[i].id===id)return T.places[i];return null;}
+function hasLL(p){return p&&typeof p.lat==="number"&&typeof p.lng==="number"&&isFinite(p.lat)&&isFinite(p.lng);}
+function q(p){return encodeURIComponent(p.q||(p.name+(T.dest?", "+T.dest:"")));}
+function gmaps(p){return "https://www.google.com/maps/search/?api=1&query="+q(p);}
+function gdir(p){return "https://www.google.com/maps/dir/?api=1&destination="+q(p);}
+function safe(u){return /^https?:\/\//i.test(u||"");}
+function links(p){var a=['<a class="go" href="'+gdir(p)+'" target="_blank" rel="noopener">Directions</a>'];
+ (p.links||[]).forEach(function(l){if(safe(l.u))a.push('<a class="'+(l.m?"main":"")+'" href="'+esc(l.u)+'" target="_blank" rel="noopener">'+esc(l.t||"Website")+'</a>');});
+ if(p.tel)a.push('<a href="tel:'+esc(String(p.tel).replace(/\s/g,""))+'">Call '+esc(p.tel)+'</a>');
+ a.push('<a href="'+gmaps(p)+'" target="_blank" rel="noopener">Google Maps</a>');return '<div class="links">'+a.join("")+'</div>';}
+function dayPlaces(i){var d=T.days[i],out=[];if(!d)return out;d.stops.forEach(function(s){var p=s.p&&place(s.p);if(hasLL(p)&&out[out.length-1]!==p)out.push(p);});return out;}
+function rgOf(p){return p.rg||(T.regions&&T.regions[0]?T.regions[0].id:"");}
+function dayRoute(i){var d=T.days[i],ps=[],n={},top="";if(!d)return null;
+ d.stops.forEach(function(s){var p=s.p&&place(s.p);if(p){var g=rgOf(p);n[g]=(n[g]||0)+1;if(!top||n[g]>n[top])top=g;}});
+ d.stops.forEach(function(s){var p=s.p&&place(s.p);if(p&&rgOf(p)===top&&ps[ps.length-1]!==p)ps.push(p);});
+ if(ps.length<2)return null;
+ return "https://www.google.com/maps/dir/?api=1&origin="+q(ps[0])+"&destination="+q(ps[ps.length-1])+(ps.length>2?"&waypoints="+ps.slice(1,-1).slice(0,8).map(q).join("%7C"):"")+"&travelmode=walking";}
+function wx(date){var w=(T.weather||[]).filter(function(x){return x.date===date;})[0];return w||null;}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({stamp:stamp,trip:T}));}catch(e){}}
+
+/* ---------- views ---------- */
+function vPlan(){
+ if(ui.day>=T.days.length)ui.day=0;var d=T.days[ui.day];
+ if(!d)return '<div class="card">No days in this trip yet.</div>';
+ var days=T.days.map(function(x,i){var w=wx(x.date);return '<button class="day'+(i===ui.day?" on":"")+'" data-act="day" data-i="'+i+'"><b>'+esc(fmt(x.date,{weekday:"short",month:"short",day:"numeric"}))+'</b><span class="num">'+(w?Math.round(w.hi)+"° / "+Math.round(w.lo)+"°"+(w.rain>=50?" · rain":""):"Day "+(i+1))+'</span></button>';}).join("");
+ var w=wx(d.date),ru=dayRoute(ui.day);
+ var stops=d.stops.map(function(s){var c=cat(s.cat),p=s.p&&place(s.p);
+  return '<li class="stop"><div class="time num">'+esc(t12(s.time))+'</div><div class="dot" style="background:'+COL[c]+'" title="'+CATS[c]+'"></div><div><strong>'+esc(s.name)+'</strong>'+(s.note?'<span class="n">'+esc(s.note)+'</span>':"")+(p?links(p):"")+'</div></li>';}).join("");
+ var ideas=T.places.filter(function(p){return p.idea&&!T.days.some(function(x){return x.stops.some(function(s){return s.p===p.id;});});});
+ var ideaBox=ideas.length?'<details><summary>'+ideas.length+' more idea'+(ideas.length>1?"s":"")+' from friends</summary>'+ideas.map(function(p){return '<div class="idea"><strong>'+esc(p.name)+'</strong><p class="small muted">'+esc(p.area||"")+(p.by?" · "+esc(p.by):"")+'. '+esc(p.note||p.why||"")+'</p>'+links(p)+'</div>';}).join("")+'</details>':"";
+ return '<div class="days" id="days">'+days+'</div><div class="card"><p class="small muted">Day '+(ui.day+1)+' of '+T.days.length+' · '+esc(fmt(d.date,{weekday:"long",month:"long",day:"numeric"}))+(w?' · '+Math.round(w.hi)+'° / '+Math.round(w.lo)+'°F'+(w.kind==="typical"?" typical":"")+(w.rain!=null?", "+w.rain+"% rain":""):"")+'</p><h2>'+esc(d.title)+'</h2>'+(d.sub?'<p class="muted" style="margin-top:4px">'+esc(d.sub)+'</p>':"")+
+  '<div class="row" style="margin-top:12px"><button class="btn primary" data-act="map-day">Day on map</button>'+(ru?'<a class="btn" href="'+ru+'" target="_blank" rel="noopener">Route in Google Maps</a>':"")+'</div><ol class="tl">'+(stops||'<li class="muted">Nothing planned.</li>')+'</ol></div>'+ideaBox;}
+function vEat(){
+ var eats=T.places.filter(function(p){return p.cat==="food"||p.cat==="cafe";}),U={};
+ function meal(m){return m==null?"":m<660?"breakfast":m<810?"lunch":m<1050?"afternoon":"dinner";}
+ eats.forEach(function(p){U[p.id]=[];T.days.forEach(function(d,i){d.stops.forEach(function(s){if(s.p===p.id)U[p.id].push({k:i*1440+(tmin(s.time)||0),l:fmt(d.date,{weekday:"short",day:"numeric"})+" "+meal(tmin(s.time))});});});});
+ var planned=eats.filter(function(p){return U[p.id].length;}).sort(function(a,b){return U[a.id][0].k-U[b.id][0].k;}),more=eats.filter(function(p){return !U[p.id].length;});
+ function row(p){return '<article class="eatrow"><div class="topline"><h3>'+esc(p.name)+'</h3>'+U[p.id].map(function(u){return '<span class="when">'+esc(u.l)+'</span>';}).join("")+(p.award?'<span class="tag">'+esc(p.award)+'</span>':"")+(p.rec?'<span class="tag">Picked by '+esc(p.by||"friends")+'</span>':"")+'</div><p class="small muted">'+[p.cuisine,p.price,p.area].filter(Boolean).map(esc).join(" · ")+'</p><p>'+esc(p.why||p.note||"")+'</p>'+(p.tip?'<p class="small muted">'+esc(p.tip)+'</p>':"")+links(p)+'</article>';}
+ return '<div><h2>Where to eat</h2>'+(T.eatSource?'<p class="muted small" style="margin-top:4px">'+esc(T.eatSource)+'</p>':"")+'</div>'+
+  (planned.length?'<section class="card"><h3 class="kick">In your plan, in order</h3>'+planned.map(row).join("")+'</section>':"")+
+  (more.length?'<section class="card"><h3 class="kick">More options</h3>'+more.map(row).join("")+'</section>':"")+
+  (!eats.length?'<div class="card muted">No restaurants in this trip yet.</div>':"");}
+function vPrep(){
+ var key=ui.prep==="pack"?"packing":"todos",gk=key==="packing"?"cat":"when",items=T[key]||[],done=items.filter(function(i){return i.done;}).length,groups=[];
+ items.forEach(function(i){var g=i[gk]||"Other";if(groups.indexOf(g)<0)groups.push(g);});
+ var cols=groups.map(function(g){var gi=items.filter(function(i){return (i[gk]||"Other")===g;});
+  return '<section class="card"><h3 style="display:flex;justify-content:space-between;margin-bottom:6px">'+esc(g)+'<span class="small muted num" style="font-weight:500">'+gi.filter(function(i){return i.done;}).length+'/'+gi.length+'</span></h3>'+gi.map(function(i){var n=items.indexOf(i);return '<div class="item'+(i.done?" done":"")+'"><input type="checkbox" id="c'+n+'" data-k="'+key+'" data-n="'+n+'"'+(i.done?" checked":"")+'><label for="c'+n+'">'+esc(i.text)+'</label>'+(safe(i.u)?'<a href="'+esc(i.u)+'" target="_blank" rel="noopener">'+esc(i.ul||"Open")+'</a>':"")+'</div>';}).join("")+'</section>';}).join("");
+ return '<div class="seg" role="group" aria-label="List"><button class="'+(ui.prep==="todo"?"on":"")+'" data-act="prep" data-k="todo">To-do</button><button class="'+(ui.prep==="pack"?"on":"")+'" data-act="prep" data-k="pack">Packing</button></div>'+
+  '<div class="row"><h2 style="flex:1">'+(key==="packing"?"Packing list":"Before you go")+'</h2><div class="bar"><i style="width:'+(items.length?Math.round(done/items.length*100):0)+'%"></i></div><span class="small num">'+done+' of '+items.length+'</span></div>'+
+  (key==="packing"&&T.wxNote?'<div class="note"><strong>Packed for the weather.</strong> '+esc(T.wxNote)+'</div>':"")+cols+
+  '<p class="small muted">Ticks are saved on this device. To add or change items, edit the plan in Claude and send the trip here again; your ticks are kept.</p>';}
+
+/* ---------- map ---------- */
+function mapList(){var l=ui.mapDay==="all"?T.places.filter(hasLL):dayPlaces(+ui.mapDay).filter(function(p,i,a){return a.indexOf(p)===i;});
+ if(ui.mapCat!=="all")l=l.filter(function(p){return cat(p.cat)===ui.mapCat;});return l;}
+function pinIcon(p,n,sel){var s=sel?34:n?28:22;return L.divIcon({className:"",iconSize:[s,s],iconAnchor:[s/2,s/2],html:'<div class="pin'+(sel?" sel":"")+'" style="width:'+s+'px;height:'+s+'px;background:'+COL[cat(p.cat)]+'">'+(n||"")+'</div>'});}
+function mapChips(){var base=ui.mapDay==="all"?T.places.filter(hasLL):dayPlaces(+ui.mapDay),have=Object.keys(CATS).filter(function(c){return base.some(function(p){return cat(p.cat)===c;});});
+ if(ui.mapCat!=="all"&&have.indexOf(ui.mapCat)<0)ui.mapCat="all";
+ document.getElementById("mchips").innerHTML=["all"].concat(have).map(function(c){return '<button type="button" class="chip'+(ui.mapCat===c?" on":"")+'" data-c="'+c+'">'+(c==="all"?"Everything":'<i style="background:'+COL[c]+'"></i>'+CATS[c])+'</button>';}).join("");}
+function mapDraw(fit){
+ layer.clearLayers();if(routeLine){map.removeLayer(routeLine);routeLine=null;}
+ var list=mapList(),numbered=ui.mapDay!=="all"&&ui.mapCat==="all";
+ if(numbered&&list.length>1)routeLine=L.polyline(list.map(function(p){return[p.lat,p.lng];}),{color:"#101B33",weight:3,dashArray:"2 9",lineCap:"round"}).addTo(map);
+ list.forEach(function(p,i){var m=L.marker([p.lat,p.lng],{icon:pinIcon(p,numbered?i+1:0,ui.sel===p.id),title:p.name,alt:p.name,zIndexOffset:ui.sel===p.id?1000:0});
+  m.on("click",function(){ui.sel=ui.sel===p.id?null:p.id;mapDraw(false);if(ui.sel)map.panTo([p.lat,p.lng]);});m.addTo(layer);});
+ if(fit&&list.length){var fl=list;
+  if(ui.mapDay==="all"&&T.regions&&T.regions.length>1){var r0=T.regions[0].id,f=list.filter(function(p){return (p.rg||r0)===r0;});if(f.length)fl=f;}
+  map.fitBounds(L.latLngBounds(fl.map(function(p){return[p.lat,p.lng];})).pad(.15),{maxZoom:16});}
+ pinCard();}
+function pinCard(){var el=document.getElementById("pcard"),p=ui.sel&&place(ui.sel);
+ if(!p){el.className="card";el.innerHTML="";return;}var c=cat(p.cat);
+ el.innerHTML='<button class="x" type="button" aria-label="Close" data-act="unsel">×</button><h3>'+esc(p.name)+'</h3><p class="small muted"><span style="color:'+COL[c]+';font-weight:700">'+CATS[c]+'</span>'+(p.area?" · "+esc(p.area):"")+(p.by?" · picked by "+esc(p.by):"")+'</p>'+((p.note||p.why)?'<p class="small" style="margin-top:6px">'+esc(p.note||p.why)+'</p>':"")+(p.approx?'<p class="small muted">Pin shows the neighbourhood, not the exact door.</p>':"")+links(p);
+ el.className="card on";}
+function mapShow(fit){
+ var sel=document.getElementById("mday");
+ sel.innerHTML='<option value="all">All days, all places</option>'+T.days.map(function(d,i){return '<option value="'+i+'">'+esc(fmt(d.date,{weekday:"short",day:"numeric"}))+": "+esc(d.title||"")+'</option>';}).join("");
+ sel.value=ui.mapDay;mapChips();
+ if(!window.L){document.getElementById("map").innerHTML='<p style="padding:20px">The map could not load. Check your internet connection and reload.</p>';return;}
+ if(!map){map=L.map("map",{zoomControl:false});L.control.zoom({position:"bottomright"}).addTo(map);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+  layer=L.layerGroup().addTo(map);map.setView([48.8589,2.347],12);map.on("click",function(){if(ui.sel){ui.sel=null;mapDraw(false);}});fit=true;}
+ setTimeout(function(){map.invalidateSize();mapDraw(fit);},0);}
+
+/* ---------- chrome ---------- */
+function render(){
+ document.getElementById("tabs").innerHTML=TABS.map(function(t){return '<button class="tab'+(ui.view===t[0]?" on":"")+'" data-tab="'+t[0]+'"'+(ui.view===t[0]?' aria-current="page"':"")+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+ICON[t[0]]+'"/></svg>'+t[1]+'</button>';}).join("");
+ var v=document.getElementById("view"),mv=document.getElementById("mapview");
+ if(!T){document.getElementById("tabs").style.display="none";mv.className="";v.style.display="";
+  v.innerHTML='<div class="card"><h2>No trip here yet</h2><p style="margin-top:8px">Open your wAIfindr app in Claude, go to the <strong>Map</strong> tab and tap <strong>Open trip app</strong>. That sends your trip to this page.</p><p class="small muted" style="margin-top:8px">Your trip travels in the link and is kept on this device only. Nothing is stored on this site.</p></div>';return;}
+ document.getElementById("trip").innerHTML='<strong>'+esc(T.name||"")+'</strong><span>'+esc(fmt(T.start,{month:"short",day:"numeric"}))+" to "+esc(fmt(T.end,{month:"short",day:"numeric"}))+" · "+esc(countdown())+'</span>';
+ document.title=(T.name?T.name+" · ":"")+"wAIfindr";
+ if(ui.view==="map"){v.style.display="none";mv.className="on";mapShow(false);}
+ else{mv.className="";v.style.display="";v.innerHTML=ui.view==="eat"?vEat():ui.view==="prep"?vPrep():vPlan();
+  if(ui.view==="plan"){var on=document.querySelector(".day.on");if(on&&on.scrollIntoView)on.scrollIntoView({inline:"center",block:"nearest"});}}}
+document.addEventListener("click",function(e){
+ var tb=e.target.closest("[data-tab]");if(tb){ui.view=tb.getAttribute("data-tab");render();document.getElementById("main").scrollTop=0;return;}
+ var ch=e.target.closest("#mchips [data-c]");if(ch){ui.mapCat=ch.getAttribute("data-c");ui.sel=null;mapChips();mapDraw(true);return;}
+ var el=e.target.closest("[data-act]");if(!el)return;var a=el.getAttribute("data-act");
+ if(a==="day"){ui.day=+el.getAttribute("data-i");render();}
+ else if(a==="map-day"){ui.mapDay=String(ui.day);ui.mapCat="all";ui.sel=null;ui.view="map";render();setTimeout(function(){if(map)mapDraw(true);},30);}
+ else if(a==="prep"){ui.prep=el.getAttribute("data-k");render();}
+ else if(a==="unsel"){ui.sel=null;mapDraw(false);}});
+document.addEventListener("change",function(e){var el=e.target;
+ if(el.id==="mday"){ui.mapDay=el.value;ui.sel=null;mapChips();mapDraw(true);}
+ else if(el.type==="checkbox"&&el.getAttribute("data-k")){var it=(T[el.getAttribute("data-k")]||[])[+el.getAttribute("data-n")];if(it){it.done=el.checked;save();render();}}});
+document.getElementById("loc").onclick=function(){var b=this;if(!navigator.geolocation||!map){b.textContent="Location unavailable";return;}b.textContent="Finding you…";
+ navigator.geolocation.getCurrentPosition(function(g){b.textContent="Where am I?";var ll=[g.coords.latitude,g.coords.longitude];if(meMark)map.removeLayer(meMark);
+  meMark=L.marker(ll,{icon:L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],html:'<div class="me"></div>'}),title:"You are here",zIndexOffset:2000}).addTo(map);map.setView(ll,Math.max(map.getZoom(),15));},
+  function(){b.textContent="Location is off";setTimeout(function(){b.textContent="Where am I?";},2500);},{enableHighAccuracy:true,timeout:10000});};
+
+/* ---------- loading a trip from the link ---------- */
+function bytes(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function unpack(hash){var parts=String(hash||"").replace(/^#/,"").split(".");
+ if(parts.length<4||!parts[3])return Promise.resolve(null);
+ var u;try{u=bytes(parts[3]);}catch(e){return Promise.resolve(null);}
+ var txt=parts[0]==="z"?(typeof DecompressionStream==="undefined"?Promise.reject(new Error("old")):new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text()):Promise.resolve(new TextDecoder().decode(u));
+ return txt.then(function(t){var d=JSON.parse(t);if(!d||!d.trip||!Array.isArray(d.trip.days))return null;return {view:parts[1],day:parts[2],stamp:String(d.stamp||""),trip:d.trip};});}
+function norm(t){t.places=Array.isArray(t.places)?t.places:[];t.days=(t.days||[]).map(function(d){d.stops=Array.isArray(d.stops)?d.stops:[];return d;});t.todos=Array.isArray(t.todos)?t.todos:[];t.packing=Array.isArray(t.packing)?t.packing:[];return t;}
+function adopt(inc){var old=T;T=norm(inc.trip);stamp=inc.stamp;
+ if(old&&old.name===T.name)["todos","packing"].forEach(function(k){var m={};(old[k]||[]).forEach(function(i){if(i.done)m[i.text]=1;});T[k].forEach(function(i){if(m[i.text])i.done=true;});});
+ save();}
+function firstDay(){var n=today0().getTime();for(var i=0;i<T.days.length;i++){var d=pd(T.days[i].date);if(d&&d.getTime()===n)return i;}return 0;}
+(function boot(){
+ try{var s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.trip&&Array.isArray(s.trip.days)){T=norm(s.trip);stamp=String(s.stamp||"");}}catch(e){}
+ function go(inc){if(inc&&inc.stamp!==stamp)adopt(inc);
+  if(T){ui.day=firstDay();if(inc){if(/^(plan|map|eat|prep)$/.test(inc.view))ui.view=inc.view;if(/^\d+$/.test(inc.day)&&T.days[+inc.day]){ui.day=+inc.day;ui.mapDay=inc.day;}}}
+  render();}
+ unpack(location.hash).then(go,function(){go(null);if(!T)document.getElementById("view").innerHTML='<div class="card"><h2>This browser is too old to open the trip</h2><p style="margin-top:8px">Update your browser, or open the link in Safari or Chrome.</p></div>';});
+})();
 window.addEventListener("hashchange",function(){location.reload();});
 </script>
 </body>
